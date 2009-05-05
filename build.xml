@@ -5,7 +5,7 @@
 
   <!-- override creation of a jar with a version number in the name -->
   <property name="dist.name" value="admin" />
-  <property name="dist.build_name" value="true" />
+  <!--property name="dist.build_name" value="true" /-->
 
   <property name="ivy.settings.file" value="${basedir}/ivy/ivysettings.xml" />
   <import file="${basedir}/ant/bootstrap.xml" />
