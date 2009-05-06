@@ -65,7 +65,7 @@ ARGV.each do |command|
     puts "Shutting down..."
     client.shutdown()
   when 'stats'
-    stats = client.stats()
+    stats = client.stats(false)
     [ [stats.jvm, "JVM"], [stats.counters, "COUNTERS"], [stats.timings, "TIMINGS"] ].each do |table, table_name|
       puts "#{table_name}:"
       table.each do |name, value|

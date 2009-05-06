@@ -63,7 +63,7 @@ class AdminService(server: ServerInterface, runtime: RuntimeEnvironment) extends
   }
 
   def serverInfo(): ServerInfo = {
-    new ServerInfo(runtime.jarName, runtime.jarVersion, runtime.jarBuild, "")
+    new ServerInfo(runtime.jarName, runtime.jarVersion, runtime.jarBuild, runtime.jarBuildRevision)
   }
 }
 
