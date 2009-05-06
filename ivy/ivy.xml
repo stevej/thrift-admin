@@ -6,7 +6,7 @@
                Only matters if you're using thrift. -->
   <info organisation="com.twitter.service"
     module="admin"
-    revision="1.0"
+    revision="1.1"
     e:buildpackage="com.twitter.service.admin"
     e:testclass="com.twitter.service.admin.TestRunner"
     e:thriftpackage="com.twitter.service.admin.gen"
@@ -35,6 +35,6 @@
     <dependency org="asm" name="asm" rev="1.5.3" /> <!--auto-->
     <dependency org="org.objenesis" name="objenesis" rev="1.1" /> <!--auto-->
 
-    <dependency org="stats" name="stats" rev="1.0" />
+    <dependency org="stats" name="stats" rev="1.1" />
   </dependencies>
 </ivy-module>

@@ -99,7 +99,11 @@ object AdminServerSpec extends Specification {
       jcl.Map(stats.jvm) must haveKey("uptime")
       jcl.Map(stats.jvm) must haveKey("heap_used")
       jcl.Map(stats.counters) must haveKey("kangaroos")
-      jcl.Map(stats.timings) must haveKey("kangaroo_time_count")
+      jcl.Map(stats.timings) must haveKey("kangaroo_time")
+      val timing = jcl.Map(stats.timings)("kangaroo_time")
+      timing.count mustEqual 1
+      timing.average mustEqual timing.minimum
+      timing.average mustEqual timing.maximum
     }
   }
 }

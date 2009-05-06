@@ -6,13 +6,21 @@
 
 namespace java com.twitter.service.admin
 
+struct Timing {
+  1: i32 count
+  2: i32 minimum
+  3: i32 maximum
+  4: i32 average
+}
+
 typedef map<string, i64> StatsGroup
 typedef map<string, double> StatsDGroup
+typedef map<string, Timing> TimingStats
 
 struct StatsResult {
   1: StatsGroup jvm
   2: StatsGroup counters
-  3: StatsGroup timings
+  3: TimingStats timings
   4: StatsDGroup gauges  
 }
 

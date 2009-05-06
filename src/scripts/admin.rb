@@ -66,11 +66,15 @@ ARGV.each do |command|
     client.shutdown()
   when 'stats'
     stats = client.stats(false)
-    [ [stats.jvm, "JVM"], [stats.counters, "COUNTERS"], [stats.timings, "TIMINGS"] ].each do |table, table_name|
+    [ [stats.jvm, "JVM"], [stats.counters, "COUNTERS"] ].each do |table, table_name|
       puts "#{table_name}:"
       table.each do |name, value|
         puts "    #{name}=#{value.inspect}"
       end
+    end
+    puts "TIMINGS:"
+    stats.timings.each do |name, timing|
+      puts "    #{name}={ count=#{timing.count} average=#{timing.average} min=#{timing.minimum} max=#{timing.maximum}}"
     end
   end
 end
