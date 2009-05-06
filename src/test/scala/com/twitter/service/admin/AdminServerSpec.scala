@@ -1,8 +1,8 @@
 /** Copyright 2008 Twitter, Inc. */
 package com.twitter.service.admin
 
-import _root_.net.lag.configgy.{Config, Configgy}
-import _root_.net.lag.logging.{Level, Logger}
+import net.lag.configgy.{Config, Configgy}
+import net.lag.logging.{Level, Logger}
 import com.facebook.thrift.protocol.TBinaryProtocol
 import com.facebook.thrift.transport.TSocket
 import com.twitter.service.Stats
@@ -27,6 +27,7 @@ object AdminServerSpec extends Specification {
   "AdminServer" should {
     doBefore {
       Configgy.configure(System.getProperty("basedir") + "/config/test.conf")
+      Logger.clearHandlers
     }
 
     doAfter {
@@ -100,8 +101,5 @@ object AdminServerSpec extends Specification {
       jcl.Map(stats.counters) must haveKey("kangaroos")
       jcl.Map(stats.timings) must haveKey("kangaroo_time_count")
     }
-
-
-    // can't really test "die" :)
   }
 }
