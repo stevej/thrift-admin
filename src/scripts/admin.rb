@@ -1,4 +1,7 @@
-#!/opt/local/bin/ruby
+#!/usr/bin/env ruby
+
+# may need to change this to wherever the admin ruby files are kept.
+$:.push("./target/gen-rb")
 
 require 'rubygems'
 require 'getoptlong'
