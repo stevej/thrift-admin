@@ -2,10 +2,10 @@
 
 package com.twitter.service.admin
 
-import _root_.net.lag.configgy.{Config, RuntimeEnvironment, Configgy}
 import com.facebook.thrift.server.{TServer, TSimpleServer}
 import com.facebook.thrift.transport.TServerSocket
 import com.twitter.service.Stats
+import net.lag.configgy.{Config, RuntimeEnvironment, Configgy}
 import net.lag.logging.Logger
 import scala.collection.Map
 import scala.collection.jcl
@@ -39,7 +39,7 @@ class AdminService(server: ServerInterface, runtime: RuntimeEnvironment) extends
         Thread.sleep(100)
         AdminService.stop
       }
-    }
+    }.start
   }
 
   def die(): Unit = {
