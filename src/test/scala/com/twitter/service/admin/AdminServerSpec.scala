@@ -15,14 +15,50 @@ import scala.collection.jcl
 
 class MockServerInterface extends ServerInterface {
   var askedToShutdown = false
+  var askedToQuiesce = false
 
   def shutdown() = {
     askedToShutdown = true
+  }
+
+  def quiesce() = {
+    askedToQuiesce = true
   }
 }
 
 
 object AdminServerSpec extends Specification {
+
+  def waitUntilThrown[T <: Throwable](ex: Class[T])(f: => Unit) = {
+    waitUntil {
+      try {
+        f
+        false
+      } catch {
+        case e: Throwable =>
+          if (e.getClass == ex) {
+            true
+          } else {
+            throw e
+          }
+      }
+    }
+  }
+
+  def waitUntil(f: => Boolean): Boolean = {
+    waitUntil(f, 5000)
+  }
+
+  def waitUntil(f: => Boolean, msec: Int): Boolean = {
+    if (msec < 0) {
+      return false
+    }
+    if (f) {
+      return true
+    }
+    Thread.sleep(50)
+    waitUntil(f, msec - 50)
+  }
 
   "AdminServer" should {
     doBefore {
@@ -82,8 +118,22 @@ object AdminServerSpec extends Specification {
       val client = new Admin.Client(new TBinaryProtocol(socket))
 
       server.askedToShutdown mustBe false
-      client.shutdown
+      client.shutdown()
       server.askedToShutdown mustBe true
+      waitUntilThrown(classOf[ConnectException]) { new Socket("localhost", 9991) }
+    }
+
+    "quiesce" in {
+      val server = new MockServerInterface
+      AdminService.start(server, null)
+      val socket = new TSocket("localhost", 9991)
+      socket.open
+      val client = new Admin.Client(new TBinaryProtocol(socket))
+
+      server.askedToQuiesce mustBe false
+      client.quiesce()
+      server.askedToQuiesce mustBe true
+      waitUntilThrown(classOf[ConnectException]) { new Socket("localhost", 9991) }
     }
 
     "provide stats" in {

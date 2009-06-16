@@ -51,7 +51,13 @@ service Admin {
    * Stops the server immediately, via System.exit, without regard to a clean shutdown.
    */
   void die()
-  
+
+  /**
+   * Stop answering new requests, but keep running while existing sessions are active.
+   * When the last existing session finishes, the server will shutdown cleanly.
+   */
+  void quiesce()
+
   /**
    * Returns a collection of server statistics, categorized by type. Timing stats are read
    * destructively if "reset" is true.

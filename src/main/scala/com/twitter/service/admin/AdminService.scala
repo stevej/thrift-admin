@@ -32,14 +32,14 @@ class AdminService(server: ServerInterface, runtime: RuntimeEnvironment) extends
 
   def shutdown(): Unit = {
     log.info("admin request: shutdown")
-    server.shutdown
-    // stop the admin thrift server in a new thread so it doesn't confuse thrift.
-    new Thread {
-      override def run() = {
-        Thread.sleep(100)
-        AdminService.stop
-      }
-    }.start
+    server.shutdown()
+    stopAdminService()
+  }
+
+  def quiesce(): Unit = {
+    log.info("admin request: quiesce")
+    server.quiesce()
+    stopAdminService()
   }
 
   def die(): Unit = {
@@ -66,6 +66,16 @@ class AdminService(server: ServerInterface, runtime: RuntimeEnvironment) extends
 
   def serverInfo(): ServerInfo = {
     new ServerInfo(runtime.jarName, runtime.jarVersion, runtime.jarBuild, runtime.jarBuildRevision)
+  }
+
+  private def stopAdminService() {
+    // stop the admin thrift server in a new thread so it doesn't confuse thrift.
+    new Thread {
+      override def run() = {
+        Thread.sleep(100)
+        AdminService.stop
+      }
+    }.start
   }
 }
 
