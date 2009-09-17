@@ -4,7 +4,7 @@
   <!-- CONFIG: jarclassname is the name of your main class to run via java -jar -->
   <!-- CONFIG: thriftpackage is where generated thrift classes go. 
                Only matters if you're using thrift. -->
-  <info organisation="com.twitter.service"
+  <info organisation="com.twitter"
     module="admin"
     revision="1.2"
     e:buildpackage="com.twitter.service.admin"
