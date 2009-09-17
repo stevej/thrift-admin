@@ -1,10 +1,24 @@
-/** Copyright 2009 Twitter, Inc. */
+/*
+ * Copyright 2009 Twitter, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License. You may obtain
+ * a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.twitter.service.admin
 
 import com.facebook.thrift.server.{TServer, TSimpleServer}
 import com.facebook.thrift.transport.TServerSocket
-import com.twitter.service.Stats
+import com.twitter.stats.Stats
 import net.lag.configgy.{Config, RuntimeEnvironment, Configgy}
 import net.lag.logging.Logger
 import scala.collection.Map
@@ -88,6 +102,7 @@ object AdminService {
   val log = Logger.get
 
   var transport: TServer = _
+  var webServer: AdminHttpService = _
 
   /**
    * Start the admin service.
@@ -100,7 +115,7 @@ object AdminService {
       new TServerSocket(port))
     log.info("Starting admin service on port %d", port)
 
-    val thread = new Thread {
+    val thread = new Thread("AdminService") {
       override def run() = {
         try {
           transport.serve()
@@ -109,16 +124,26 @@ object AdminService {
         }
       }
     }
-    thread.start
+    thread.start()
+
+    if (Configgy.config.getInt("admin_http_port").isDefined) {
+      webServer = new AdminHttpService(server, runtime)
+      webServer.start()
+    }
   }
 
   /**
    * Stop the admin service.
    */
   def stop() = {
+    log.info("Shutting down admin service.")
     if (transport != null) {
-      transport.stop
+      transport.stop()
       transport = null
+    }
+    if (webServer != null) {
+      webServer.stop()
+      webServer = null
     }
   }
 }

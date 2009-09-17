@@ -5,7 +5,7 @@ import net.lag.configgy.{Config, Configgy}
 import net.lag.logging.{Level, Logger}
 import com.facebook.thrift.protocol.TBinaryProtocol
 import com.facebook.thrift.transport.TSocket
-import com.twitter.service.Stats
+import com.twitter.stats.Stats
 import java.io.IOException
 import java.net.{ConnectException, Socket}
 
@@ -143,7 +143,7 @@ object AdminServerSpec extends Specification {
       val client = new Admin.Client(new TBinaryProtocol(socket))
 
       // make some statsy things happen
-      Stats.time("kangaroo_time") { Stats.incr(1, "kangaroos") }
+      Stats.time("kangaroo_time") { Stats.incr("kangaroos", 1) }
 
       val stats = client.stats(false)
       jcl.Map(stats.jvm) must haveKey("uptime")
