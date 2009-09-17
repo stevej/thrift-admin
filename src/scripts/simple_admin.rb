@@ -60,6 +60,7 @@ class TCPSocket
   end
 end
 
+
 def pack_value(type, value)
   case type
   when Types::BOOL
@@ -169,7 +170,7 @@ def stats(s)
   name, seq_id, response = read_response(s)
   response = response.first
 
-  [ [ response[0], "JVM" ], [ response[1], "COUNTERS" ] ].each do |table, table_name|
+  [ [ response[0], "JVM" ], [ response[1], "COUNTERS" ], [ response[3], "GAUGES" ] ].each do |table, table_name|
     puts "#{table_name}:"
     table.each do |name, value|
       puts "    #{name}=#{value.inspect}"
