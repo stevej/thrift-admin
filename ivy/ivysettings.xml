@@ -17,7 +17,7 @@
       <ibiblio name="oauth.net" m2compatible="true" root="http://oauth.googlecode.com/svn/code/maven" />
     </chain>
     <filesystem name="local" m2compatible="true" transactional="false">
-      <artifact pattern="${basedir}/repo/local/[organisation]/[module]/[revision]/[artifact]-[revision].[ext]" />
+      <artifact pattern="${basedir}/dist/repo/[organisation]/[module]/[revision]/[artifact]-[revision].[ext]" />
     </filesystem>
   </resolvers>
 

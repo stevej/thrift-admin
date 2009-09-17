@@ -25,6 +25,7 @@
 
     <dependency org="net.lag" name="configgy" rev="1.4" />
     <dependency org="thrift" name="libthrift" rev="751142" /> <!--auto-->
+    <dependency org="com.twitter" name="stats" rev="1.2" />
     <dependency org="com.twitter" name="json" rev="1.1" />
 
     <dependency org="org.scala-tools.testing" name="specs" rev="1.4.4" conf="test->*" />
@@ -34,7 +35,5 @@
     <dependency org="cglib" name="cglib" rev="2.1_3" conf="test->*" /> <!--auto-->
     <dependency org="asm" name="asm" rev="1.5.3" conf="test->*" /> <!--auto-->
     <dependency org="org.objenesis" name="objenesis" rev="1.1" conf="test->*" /> <!--auto-->
-
-    <dependency org="stats" name="stats" rev="1.2" />
   </dependencies>
 </ivy-module>
