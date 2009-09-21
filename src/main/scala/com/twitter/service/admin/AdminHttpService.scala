@@ -47,6 +47,7 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
         }
       } catch {
         case e: InterruptedException =>
+          log.error("Shutting down admin http service.")
           // silently die.
         case e: Exception =>
           log.error(e, "AdminHttpService uncaught exception; dying: %s", e.toString)
