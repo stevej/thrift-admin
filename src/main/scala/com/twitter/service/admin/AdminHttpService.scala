@@ -61,7 +61,7 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
     while (in.readLine() != "") { }
     val segments = requestLine.split(" ", 3)
     if (segments.length != 3) {
-      sendError(client, "Malformed request line.")
+      sendError(client, "Malformed request line: " + requestLine)
       return
     }
     val command = segments(0).toLowerCase()
@@ -70,6 +70,10 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
       return
     }
     val pathSegments = segments(1).split("/").filter(_.length > 0)
+    if (pathSegments.length < 1) {
+      sendError(client, "Malformed request path: " + segments(1))
+      return
+    }
     pathSegments(0) match {
       case "ping" =>
         send(client, "pong")
@@ -100,6 +104,7 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
   }
 
   private def sendError(client: Socket, message: String) {
+    log.info("Admin http client error: %s", message)
     send(client, "400", "ERROR", Map("error" -> message))
   }
 
