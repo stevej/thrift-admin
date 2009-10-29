@@ -30,43 +30,10 @@ import scala.collection.jcl
 
 
 object AdminServiceSpec extends Specification with Eventually {
-
-  def waitUntilThrown[T <: Throwable](ex: Class[T])(f: => Unit) = {
-    waitUntil {
-      try {
-        f
-        false
-      } catch {
-        case e: Throwable =>
-          if (e.getClass == ex) {
-            true
-          } else {
-            throw e
-          }
-      }
-    }
-  }
-
-  def waitUntil(f: => Boolean): Boolean = {
-    waitUntil(f, 5000)
-  }
-
-  def waitUntil(f: => Boolean, msec: Int): Boolean = {
-    if (msec < 0) {
-      return false
-    }
-    if (f) {
-      return true
-    }
-    Thread.sleep(50)
-    waitUntil(f, msec - 50)
-  }
-
   "AdminServer" should {
     doAfter {
       AdminService.stop
     }
-
 
     "start and stop" in {
       new Socket("localhost", 9991) must throwA[ConnectException]
@@ -117,7 +84,7 @@ object AdminServiceSpec extends Specification with Eventually {
       server.askedToShutdown mustBe false
       client.shutdown()
       server.askedToShutdown mustBe true
-      waitUntilThrown(classOf[ConnectException]) { new Socket("localhost", 9991) }
+      new Socket("localhost", 9991) must eventually(throwA[ConnectException])
     }
 
     "quiesce" in {
@@ -130,7 +97,7 @@ object AdminServiceSpec extends Specification with Eventually {
       server.askedToQuiesce mustBe false
       client.quiesce()
       server.askedToQuiesce mustBe true
-      waitUntilThrown(classOf[ConnectException]) { new Socket("localhost", 9991) }
+      new Socket("localhost", 9991) must eventually(throwA[ConnectException])
     }
 
     "provide stats" in {
