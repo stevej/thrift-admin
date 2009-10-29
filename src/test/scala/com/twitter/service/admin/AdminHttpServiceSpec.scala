@@ -17,20 +17,19 @@
 package com.twitter.service.admin
 
 import java.io.InputStream
-import net.lag.configgy.RuntimeEnvironment
 /*
 import net.lag.logging.{Level, Logger}
-import com.facebook.thrift.protocol.TBinaryProtocol
-import com.facebook.thrift.transport.TSocket
-import com.twitter.stats.Stats
 import java.io.IOException
 */
 import java.net.{ConnectException, Socket}
-
+import com.twitter.json.Json
+import com.twitter.stats.Stats
+import com.twitter.xrayspecs.Eventually
+import net.lag.configgy.RuntimeEnvironment
 import org.specs._
 /*import scala.collection.jcl*/
 
-object AdminHttpServiceSpec extends Specification {
+object AdminHttpServiceSpec extends Specification with Eventually {
   class PimpedInputStream(stream: InputStream) {
     def readString(maxBytes: Int) = {
       val buffer = new Array[Byte](maxBytes)
@@ -41,23 +40,69 @@ object AdminHttpServiceSpec extends Specification {
   implicit def pimpInputStream(stream: InputStream) = new PimpedInputStream(stream)
 
   "AdminHttpService" should {
-    "start and stop" in {
+    var service: AdminHttpService = null
+    var server: MockServerInterface = null
+
+    doBefore {
       new Socket("localhost", 9990) must throwA[ConnectException]
-      val service = new AdminHttpService(new MockServerInterface, null)
+      server = new MockServerInterface
+      service = new AdminHttpService(server, new RuntimeEnvironment(getClass))
+      AdminService.webServer = service
       service.start()
+    }
+
+    doAfter {
+      service.stop()
+      new Socket("localhost", 9990) must eventually(throwA[ConnectException])
+      AdminService.webServer = null
+    }
+
+    "start and stop" in {
       new Socket("localhost", 9990) must notBeNull
       service.stop()
       new Socket("localhost", 9990) must throwA[ConnectException]
     }
 
     "answer pings" in {
-      val service = new AdminHttpService(new MockServerInterface, new RuntimeEnvironment(getClass))
-      service.start()
       val socket = new Socket("localhost", 9990)
       socket.getOutputStream().write("get /ping\n".getBytes)
-      val buffer = new Array[Byte](1024)
-      val x = socket.getInputStream().readString(1024)
-      x.split("\n").last mustEqual "\"pong\""
+      socket.getInputStream().readString(1024).split("\n").last mustEqual "\"pong\""
+    }
+
+    "shutdown" in {
+      server.askedToShutdown mustBe false
+      val socket = new Socket("localhost", 9990)
+      socket.getOutputStream().write("get /shutdown\n".getBytes)
+      server.askedToShutdown must eventually(beTrue)
+      new Socket("localhost", 9990) must eventually(throwA[ConnectException])
+    }
+
+    "quiesce" in {
+      server.askedToQuiesce mustBe false
+      val socket = new Socket("localhost", 9990)
+      socket.getOutputStream().write("get /quiesce\n".getBytes)
+      server.askedToQuiesce must eventually(beTrue)
+      new Socket("localhost", 9990) must eventually(throwA[ConnectException])
+    }
+
+    "provide stats" in {
+      // make some statsy things happen
+      Stats.clearAll()
+      Stats.time("kangaroo_time") { Stats.incr("kangaroos", 1) }
+
+      "in json" in {
+        val socket = new Socket("localhost", 9990)
+        socket.getOutputStream().write("get /stats\n".getBytes)
+        val stats = Json.parse(socket.getInputStream().readString(1024).split("\n").last).asInstanceOf[Map[String, Map[String, AnyRef]]]
+        stats("jvm") must haveKey("uptime")
+        stats("jvm") must haveKey("heap_used")
+        stats("counters") must haveKey("kangaroos")
+        stats("timings") must haveKey("kangaroo_time")
+        val timing = stats("timings")("kangaroo_time").asInstanceOf[Map[String, Int]]
+        timing("count") mustEqual 1
+        timing("average") mustEqual timing("minimum")
+        timing("average") mustEqual timing("maximum")
+      }
     }
   }
 }

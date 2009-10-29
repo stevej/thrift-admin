@@ -107,6 +107,7 @@ object AdminServiceSpec extends Specification with Eventually {
       val client = new Admin.Client(new TBinaryProtocol(socket))
 
       // make some statsy things happen
+      Stats.clearAll()
       Stats.time("kangaroo_time") { Stats.incr("kangaroos", 1) }
 
       val stats = client.stats(false)
