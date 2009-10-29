@@ -28,21 +28,7 @@ import org.specs._
 import scala.collection.jcl
 
 
-class MockServerInterface extends ServerInterface {
-  var askedToShutdown = false
-  var askedToQuiesce = false
-
-  def shutdown() = {
-    askedToShutdown = true
-  }
-
-  def quiesce() = {
-    askedToQuiesce = true
-  }
-}
-
-
-object AdminServerSpec extends Specification {
+object AdminServiceSpec extends Specification {
 
   def waitUntilThrown[T <: Throwable](ex: Class[T])(f: => Unit) = {
     waitUntil {
@@ -76,11 +62,6 @@ object AdminServerSpec extends Specification {
   }
 
   "AdminServer" should {
-    doBefore {
-      Configgy.configure(System.getProperty("basedir") + "/config/test.conf")
-      Logger.clearHandlers
-    }
-
     doAfter {
       AdminService.stop
     }

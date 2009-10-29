@@ -16,6 +16,15 @@
 
 package com.twitter.service.admin
 
-import com.twitter.xrayspecs.XraySpecsRunner
+class MockServerInterface extends ServerInterface {
+  var askedToShutdown = false
+  var askedToQuiesce = false
 
-object TestRunner extends XraySpecsRunner
+  def shutdown() {
+    askedToShutdown = true
+  }
+
+  def quiesce() {
+    askedToQuiesce = true
+  }
+}
