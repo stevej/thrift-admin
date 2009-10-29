@@ -49,7 +49,11 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
         while (true) {
           val client = serverSocket.accept()
           execute("AdminHttpService client") {
-            handleRequest(client)
+            try {
+              handleRequest(client)
+            } catch {
+              case _ =>
+            }
             try {
               client.close()
             } catch {
@@ -75,6 +79,9 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
   private def readRequest(client: Socket): Request = {
     val in = new BufferedReader(new InputStreamReader(client.getInputStream()))
     val requestLine = in.readLine()
+    if (requestLine == null) {
+      throw new IOException("EOF")
+    }
     val segments = requestLine.split(" ", 3)
     if (segments.length == 3) {
       // read the "headers", which we will ignore.
@@ -96,8 +103,8 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
     }
     if (pathSegments.last contains ".") {
       val filenameSegments = pathSegments.last.split("\\.", 2)
-      val params = pathSegments.slice(1, pathSegments.size - 2) ++ List(filenameSegments(0))
-      Request(pathSegments(0), params.toList, filenameSegments(1).toLowerCase())
+      val params = pathSegments.slice(0, pathSegments.size - 1) ++ List(filenameSegments(0))
+      Request(params(0), params.drop(1).toList, filenameSegments(1).toLowerCase())
     } else {
       Request(pathSegments(0), pathSegments.drop(1).toList, "json")
     }
@@ -123,8 +130,14 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
           AdminService.stop()
         }
       case "stats" =>
-        send(client, Map("jvm" -> Stats.getJvmStats, "counters" -> Stats.getCounterStats,
-                         "timings" -> Stats.getTimingStats(false), "gauges" -> Stats.getGaugeStats(false)))
+        val reset = request.parameters.contains("reset")
+        request.format match {
+          case "txt" =>
+            sendRaw(client, Stats.stats(reset))
+          case _ =>
+            send(client, Map("jvm" -> Stats.getJvmStats, "counters" -> Stats.getCounterStats,
+                             "timings" -> Stats.getTimingStats(reset), "gauges" -> Stats.getGaugeStats(reset)))
+        }
       case "server_info" =>
         send(client, Map("name" -> runtime.jarName, "version" -> runtime.jarVersion,
                          "build" -> runtime.jarBuild, "build_revision" -> runtime.jarBuildRevision))
@@ -133,22 +146,24 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
     }
   }
 
-  private def send(client: Socket, data: Any) {
-    send(client, "200", "OK", data)
-  }
+  private def send(client: Socket, data: Any): Unit = send(client, "200", "OK", data)
 
   private def sendError(client: Socket, message: String) {
     log.info("Admin http client error: %s", message)
     send(client, "400", "ERROR", Map("error" -> message))
   }
 
-  private def send(client: Socket, code: String, codeDescription: String, data: Any) {
+  private def send(client: Socket, code: String, codeDescription: String, data: Any): Unit = sendRaw(client, code, codeDescription, Json.build(data).toString + "\n")
+
+  private def sendRaw(client: Socket, data: String): Unit = sendRaw(client, "200", "OK", data)
+
+  private def sendRaw(client: Socket, code: String, codeDescription: String, data: String) {
     val out = new OutputStreamWriter(client.getOutputStream())
     out.write("HTTP/1.0 %s %s\n".format(code, codeDescription))
     out.write("Server: %s/%s %s %s\n".format(runtime.jarName, runtime.jarVersion, runtime.jarBuild, runtime.jarBuildRevision))
     out.write("Content-Type: text/plain\n")
     out.write("\n")
-    out.write(Json.build(data).toString + "\n")
+    out.write(data)
     out.flush()
   }
 

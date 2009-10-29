@@ -86,11 +86,11 @@ object AdminHttpServiceSpec extends Specification with Eventually {
     }
 
     "provide stats" in {
-      // make some statsy things happen
-      Stats.clearAll()
-      Stats.time("kangaroo_time") { Stats.incr("kangaroos", 1) }
-
       "in json" in {
+        // make some statsy things happen
+        Stats.clearAll()
+        Stats.time("kangaroo_time") { Stats.incr("kangaroos", 1) }
+
         val socket = new Socket("localhost", 9990)
         socket.getOutputStream().write("get /stats\n".getBytes)
         val stats = Json.parse(socket.getInputStream().readString(1024).split("\n").last).asInstanceOf[Map[String, Map[String, AnyRef]]]
@@ -102,6 +102,35 @@ object AdminHttpServiceSpec extends Specification with Eventually {
         timing("count") mustEqual 1
         timing("average") mustEqual timing("minimum")
         timing("average") mustEqual timing("maximum")
+      }
+
+      "in json, with reset" in {
+        // make some statsy things happen
+        Stats.clearAll()
+        Stats.time("kangaroo_time") { Stats.incr("kangaroos", 1) }
+
+        val socket = new Socket("localhost", 9990)
+        socket.getOutputStream().write("get /stats/reset\n".getBytes)
+        val stats = Json.parse(socket.getInputStream().readString(1024).split("\n").last).asInstanceOf[Map[String, Map[String, AnyRef]]]
+        val timing = stats("timings")("kangaroo_time").asInstanceOf[Map[String, Int]]
+        timing("count") mustEqual 1
+
+        val socket2 = new Socket("localhost", 9990)
+        socket2.getOutputStream().write("get /stats/reset\n".getBytes)
+        val stats2 = Json.parse(socket2.getInputStream().readString(1024).split("\n").last).asInstanceOf[Map[String, Map[String, AnyRef]]]
+        val timing2 = stats2("timings")("kangaroo_time").asInstanceOf[Map[String, Int]]
+        timing2("count") mustEqual 0
+      }
+
+      "in text" in {
+        // make some statsy things happen
+        Stats.clearAll()
+        Stats.time("kangaroo_time") { Stats.incr("kangaroos", 1) }
+
+        val socket = new Socket("localhost", 9990)
+        socket.getOutputStream().write("get /stats.txt\n".getBytes)
+        val response = socket.getInputStream().readString(1024).split("\n")
+        response mustContain "kangaroos: 1"
       }
     }
   }
