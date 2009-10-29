@@ -1,7 +1,7 @@
 <ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
   <info organisation="com.twitter"
     module="admin"
-    revision="1.2"
+    revision="1.3"
     e:buildpackage="com.twitter.service.admin"
     e:testclass="com.twitter.service.admin.TestRunner"
     e:thriftpackage="com.twitter.service.admin.gen"
