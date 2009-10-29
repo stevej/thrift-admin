@@ -17,7 +17,7 @@
 package com.twitter.service.admin
 
 import java.io._
-import java.net.{ServerSocket, Socket}
+import java.net.{ServerSocket, Socket, SocketException, SocketTimeoutException}
 import java.util.concurrent.CountDownLatch
 import com.twitter.json.Json
 import com.twitter.stats.Stats
@@ -31,6 +31,16 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
   val serverSocket = new ServerSocket(port)
   var startupLatch: CountDownLatch = null
 
+  serverSocket.setReuseAddress(true)
+
+  private def execute(threadName: String)(f: => Unit) {
+    new Thread(threadName) {
+      override def run() {
+        f
+      }
+    }.start()
+  }
+
   val thread = new Thread("AdminHttpService") {
     override def run() {
       log.info("Starting admin http service on port %d", port)
@@ -38,15 +48,20 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
       try {
         while (true) {
           val client = serverSocket.accept()
-          handleRequest(client)
-          try {
-            client.close()
-          } catch {
-            case _ =>
+          execute("AdminHttpService client") {
+            handleRequest(client)
+            try {
+              client.close()
+            } catch {
+              case _ =>
+            }
           }
         }
       } catch {
         case e: InterruptedException =>
+          log.error("Shutting down admin http service.")
+          // silently die.
+        case e: SocketException =>
           log.error("Shutting down admin http service.")
           // silently die.
         case e: Exception =>
@@ -55,26 +70,42 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
     }
   }
 
-  def handleRequest(client: Socket) {
+  case class Request(command: String, parameters: List[String], format: String)
+
+  private def readRequest(client: Socket): Request = {
     val in = new BufferedReader(new InputStreamReader(client.getInputStream()))
     val requestLine = in.readLine()
-    while (in.readLine() != "") { }
     val segments = requestLine.split(" ", 3)
-    if (segments.length != 3) {
+    if (segments.length == 3) {
+      // read the "headers", which we will ignore.
+      while (in.readLine() != "") { }
+    }
+    if (segments.length < 2) {
       sendError(client, "Malformed request line: " + requestLine)
-      return
+      throw new IOException("Bad request")
     }
     val command = segments(0).toLowerCase()
     if (command != "get") {
       sendError(client, "Request must be GET.")
-      return
+      throw new IOException("Bad request")
     }
     val pathSegments = segments(1).split("/").filter(_.length > 0)
     if (pathSegments.length < 1) {
       sendError(client, "Malformed request path: " + segments(1))
-      return
+      throw new IOException("Bad request")
     }
-    pathSegments(0) match {
+    if (pathSegments.last contains ".") {
+      val filenameSegments = pathSegments.last.split("\\.", 2)
+      val params = pathSegments.slice(1, pathSegments.size - 2) ++ List(filenameSegments(0))
+      Request(pathSegments(0), params.toList, filenameSegments(1).toLowerCase())
+    } else {
+      Request(pathSegments(0), pathSegments.drop(1).toList, "json")
+    }
+  }
+
+  def handleRequest(client: Socket) {
+    val request = readRequest(client)
+    request.command match {
       case "ping" =>
         send(client, "pong")
       case "reload" =>
@@ -87,7 +118,10 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
       case "quiesce" =>
         send(client, "ok")
         server.quiesce()
-        (new Thread { override def run() { Thread.sleep(100); AdminService.stop() } }).start()
+        execute("quiesce request") {
+          Thread.sleep(100)
+          AdminService.stop()
+        }
       case "stats" =>
         send(client, Map("jvm" -> Stats.getJvmStats, "counters" -> Stats.getCounterStats,
                          "timings" -> Stats.getTimingStats(false), "gauges" -> Stats.getGaugeStats(false)))
@@ -125,6 +159,11 @@ class AdminHttpService(server: ServerInterface, runtime: RuntimeEnvironment) {
   }
 
   def stop() {
+    try {
+      serverSocket.close()
+    } catch {
+      case _ =>
+    }
     thread.interrupt()
     thread.join()
   }

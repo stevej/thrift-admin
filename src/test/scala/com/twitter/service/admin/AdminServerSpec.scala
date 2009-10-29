@@ -21,6 +21,7 @@ import net.lag.logging.{Level, Logger}
 import com.facebook.thrift.protocol.TBinaryProtocol
 import com.facebook.thrift.transport.TSocket
 import com.twitter.stats.Stats
+import com.twitter.xrayspecs.Eventually
 import java.io.IOException
 import java.net.{ConnectException, Socket}
 
@@ -28,7 +29,7 @@ import org.specs._
 import scala.collection.jcl
 
 
-object AdminServiceSpec extends Specification {
+object AdminServiceSpec extends Specification with Eventually {
 
   def waitUntilThrown[T <: Throwable](ex: Class[T])(f: => Unit) = {
     waitUntil {
